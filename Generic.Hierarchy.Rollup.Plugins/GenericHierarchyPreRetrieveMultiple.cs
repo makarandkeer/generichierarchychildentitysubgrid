@@ -37,8 +37,6 @@ namespace Generic.Hierarchy.Rollup.Plugins
 
                 bool TraceEnabled = false;
 
-  //<entity ReferencingEntity="incident" ReferencingAttribute="productid" ReferencedEntity="product" ReferencedAttribute="productid" ReferencedParentAttribute="parentproductid" IsEnabled="false" />
-  //<entity ReferencingEntity="incident" ReferencingAttribute="customerid" ReferencedEntity="account" ReferencedAttribute="accountid" ReferencedParentAttribute="parentaccountid" IsEnabled="false" />
   //<entity ReferencingEntity="incident" ReferencingAttribute="subjectid" ReferencedEntity="subject" ReferencedAttribute="subjectid" ReferencedParentAttribute="parentsubject" IsEnabled="false" />
 
                 if (executionContext.MessageName == "RetrieveMultiple")
@@ -87,15 +85,9 @@ namespace Generic.Hierarchy.Rollup.Plugins
                                     {
                                         #region if condition
                                         var referenceEntityIdCondition = query.Criteria.Conditions.Where(a => a.AttributeName == ReferencingAttribute).FirstOrDefault();
-                                        Entity referencedCRMEntity = service.Retrieve(ReferencedEntity.ToLower(), (Guid)referenceEntityIdCondition.Values[0], new ColumnSet(ReferencedAttribute.ToLower(), ReferencedParentAttribute.ToLower()));
+                                        FilterExpression hierarchyFilter = new FilterExpression(LogicalOperator.Or);
 
-                                      FilterExpression hierarchyFilter = new FilterExpression(LogicalOperator.Or);
-
-                                        hierarchyFilter.AddCondition(new ConditionExpression(ReferencedAttribute, ConditionOperator.Equal, referencedCRMEntity.Id));
-                                        hierarchyFilter.AddCondition(new ConditionExpression(ReferencedAttribute, ConditionOperator.Under, referencedCRMEntity.Id));
-
-                                        hierarchyFilter.AddCondition(new ConditionExpression(ReferencedAttribute, ConditionOperator.Equal, referencedCRMEntity.Id));
-                                        hierarchyFilter.AddCondition(new ConditionExpression(ReferencedParentAttribute, ConditionOperator.Equal, referencedCRMEntity.Id));
+                                        hierarchyFilter.AddCondition(new ConditionExpression(ReferencedAttribute, ConditionOperator.UnderOrEqual, (Guid)referenceEntityIdCondition.Values[0]));
 
                                         LinkEntity accountLink = new LinkEntity()
                                         {

@@ -1,0 +1,213 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script type="text/javascript" src="../../ClientGlobalContext.js.aspx"></script>
+    <script type="text/javascript" src="../Script/jquery_2.2.4.js"></script>
+    <script type="text/javascript" src="jquery_2.2.4.js"></script>
+    <style type="text/css">
+        body {
+            font-size: 12px;
+            font-family: Segoe UI,Tahoma,Arial;
+        }
+
+        table {
+            border-collapse: collapse;
+            font-size: 12px;
+            font-family: Segoe UI,Tahoma,Arial;
+        }
+
+        table, td {
+            border: 1px solid gray;
+            padding: 2px 10px 2px 10px;
+        }
+
+        th {
+            border: 1px solid gray;
+            font-size: 11px;
+            font-weight: normal;
+            color: #000000;
+        }
+        td{
+
+            vertical-align:central;
+        }
+    </style>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#btnGenerateConfig').click(function () { GenerateConfig() });
+            $('#btnUpdateConfig').click(function () { UpdateConfig() });
+            var returnData = GetConfig(false, 'new', false, '', false);
+            $('#DIVConfig').html(returnData.HTMLOutput);
+            $('#txtCustomFieldPrefix').val(returnData.CustomFieldPrefixOut);
+
+            if (returnData.EnableTraceOut == 'true') {
+                $('#chkEnableTracing').prop('checked', true);
+            }
+            else {
+                $('#chkEnableTracing').prop('checked', false);
+            }
+            
+            //alert("ConfigWebResourceExists : " + returnData.ConfigWebResourceExists);
+            $('#configWebResourceExistsHidden').val(returnData.ConfigWebResourceExists);
+
+            if ($('#configWebResourceExistsHidden').val() == 'true') {
+                $('#btnGenerateConfig').hide();
+            }
+        });
+        function GetConfig(refreshConfigXML, customFieldPrefix, enableTrace, enabledEntityIDs, createConfigWebResource) {
+            var returnData = {};
+            //RefreshConfigXML | CustomFieldPrefix | EnableTrace | EnabledEntityIDs | HTMLOutput |CreateConfigWebResource | ConfigWebResourceExists 
+            var requestName = "mkisv_GenericHierarchyAction"
+            // Creating the request XML for calling the Action
+            var requestXML = ""
+            requestXML += "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\">";
+            requestXML += "  <s:Body>";
+            requestXML += "    <Execute xmlns=\"http://schemas.microsoft.com/xrm/2011/Contracts/Services\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\">";
+            requestXML += "      <request xmlns:a=\"http://schemas.microsoft.com/xrm/2011/Contracts\">";
+            requestXML += "        <a:Parameters xmlns:b=\"http://schemas.datacontract.org/2004/07/System.Collections.Generic\">";
+
+            requestXML += "        <a:KeyValuePairOfstringanyType>";
+            requestXML += "            <b:key>RefreshConfigXML</b:key>";
+            requestXML += "            <b:value i:type=\'c:boolean\' xmlns:c=\'http://www.w3.org/2001/XMLSchema\'>" + refreshConfigXML + "</b:value>";
+
+            requestXML += "        </a:KeyValuePairOfstringanyType>";
+            requestXML += "        <a:KeyValuePairOfstringanyType>";
+            requestXML += "            <b:key>EnableTrace</b:key>";
+            requestXML += "            <b:value i:type=\'c:boolean\' xmlns:c=\'http://www.w3.org/2001/XMLSchema\'>" + enableTrace + "</b:value>";
+            requestXML += "        </a:KeyValuePairOfstringanyType>";
+
+            requestXML += "        <a:KeyValuePairOfstringanyType>";
+            requestXML += "            <b:key>CreateConfigWebResource</b:key>";
+            requestXML += "            <b:value i:type=\'c:boolean\' xmlns:c=\'http://www.w3.org/2001/XMLSchema\'>" + createConfigWebResource + "</b:value>";
+            requestXML += "        </a:KeyValuePairOfstringanyType>";
+
+            requestXML += "        <a:KeyValuePairOfstringanyType>";
+            requestXML += "            <b:key>CustomFieldPrefix</b:key>";
+            requestXML += "            <b:value i:type=\'c:string\' xmlns:c=\'http://www.w3.org/2001/XMLSchema\'>" + customFieldPrefix + "</b:value>";
+            requestXML += "        </a:KeyValuePairOfstringanyType>";
+
+            if (enabledEntityIDs.length > 0) {
+                requestXML += "        <a:KeyValuePairOfstringanyType>";
+                requestXML += "            <b:key>EnabledEntityIDs</b:key>";
+                requestXML += "            <b:value i:type=\'c:string\' xmlns:c=\'http://www.w3.org/2001/XMLSchema\'>" + enabledEntityIDs + "</b:value>";
+                requestXML += "        </a:KeyValuePairOfstringanyType>";
+            }
+
+
+            requestXML += "        </a:Parameters>";
+            requestXML += "        <a:RequestId i:nil=\"true\" />";
+            requestXML += "        <a:RequestName>" + requestName + "</a:RequestName>";
+            requestXML += "      </request>";
+            requestXML += "    </Execute>";
+            requestXML += "  </s:Body>";
+            requestXML += "</s:Envelope>";
+            var req = new XMLHttpRequest();
+            req.open("POST", GetClientUrl(), false)
+            req.setRequestHeader("Accept", "application/xml, text/xml, */*");
+            req.setRequestHeader("Content-Type", "text/xml; charset=utf-8");
+            req.setRequestHeader("SOAPAction", "http://schemas.microsoft.com/xrm/2011/Contracts/Services/IOrganizationService/Execute");
+            req.send(requestXML);
+            //Get the Resonse from the CRM Execute method
+            if (req.readyState == 4) {
+                if (req.status == 200) {
+                    xmlDoc = $.parseXML(req.responseText);
+                    var returnValues = $(xmlDoc).find("a\\:KeyValuePairOfstringanyType,KeyValuePairOfstringanyType");
+                    if (returnValues.length > 0) {
+                        for (v = 0; v < returnValues.length; v++) {
+                            var key = $(returnValues[v]).find("b\\:key,key");
+                            key = $(key[0]).text();
+                            var value = $(returnValues[v]).find("b\\:value,value");
+                            value = $(value[0]).text();
+                            returnData[key] = value;
+                        }
+                    }
+                }
+                else if (req.responseXML.xml == undefined || req.responseXML.xml == null) {
+                    GetError(req.responseText);
+                }
+            }
+            return returnData;
+        }
+        function GetClientUrl() {
+            if (typeof Xrm.Page.context == "object") {
+                clientUrl = Xrm.Page.context.getClientUrl();
+            }
+            var ServicePath = "/XRMServices/2011/Organization.svc/web";
+            return clientUrl + ServicePath;
+        }
+        function GetError(faultText) {
+            var errorMessage = "Unknown Error (Unable to parse the fault)";
+            try {
+                var xmlDoc = $.parseXML(faultText);
+                var xml = $(xmlDoc);
+                var errorMessages = xml.find("Message");
+                alert($(errorMessages[0]).text());
+            }
+            catch (e) {
+                alert(errorMessage);
+            }
+        }
+
+        function GenerateConfig()
+        {
+            var refreshConfigXML = $('#chkRefreshConfigXml').is(':checked');
+            var customFieldPrefix = $('#txtCustomFieldPrefix').val();
+            var enableTrace = $('#chkEnableTracing').is(':checked');
+            var createConfigWebResource = true;
+            var enabledEntityIDs = '';
+            var returnData = GetConfig(refreshConfigXML, customFieldPrefix, enableTrace, enabledEntityIDs, createConfigWebResource);
+            $('#DIVConfig').html(returnData.HTMLOutput);
+            $('#txtCustomFieldPrefix').val(returnData.CustomFieldPrefixOut);
+            $('#chkEnableTracing').prop('checked', returnData.EnableTraceOut);
+            $('#configWebResourceExistsHidden').val(returnData.ConfigWebResourceExists);
+
+            alert('Config Xml is generated. \nPlease select the Entity-Releationships which you want to enable.');
+        }
+
+        function UpdateConfig() {
+            var refreshConfigXML = $('#chkRefreshConfigXml').is(':checked');
+            var customFieldPrefix = $('#txtCustomFieldPrefix').val();
+            var enableTrace = $('#chkEnableTracing').is(':checked');
+            var createConfigWebResource = false;
+            var enabledEntityIDs = ',';
+            //tblConfig
+            //clsIsEnabled
+            $('.clsIsEnabled').each(function () {
+                if ($(this).is(':checked')) {
+                    //alert($(this).attr('id') + ' - ' + $(this).is(':checked'));
+                    enabledEntityIDs += $(this).attr('id') + ',';
+                }
+            });
+
+            var returnData = GetConfig(refreshConfigXML, customFieldPrefix, enableTrace, enabledEntityIDs, createConfigWebResource);
+            $('#DIVConfig').html(returnData.HTMLOutput);
+            $('#txtCustomFieldPrefix').val(returnData.CustomFieldPrefixOut);
+            $('#chkEnableTracing').prop('checked', returnData.EnableTraceOut);
+
+            alert('UpdateConfig Completed');
+        }
+    </script>
+</head>
+<body>
+    <input id="configWebResourceExistsHidden" type="hidden" />
+    <div>
+        <table>
+            <tr>
+                <td>Hierarchy Custom Field Prefix : <input type="text" id="txtCustomFieldPrefix" title="Enter the prefix used for custom field that is created for Hierarchy Rollup." /></td>
+                <td>Enable Tracing? <input id="chkEnableTracing" type="checkbox" title="Enable Trace if FetchXML needs to capture as Note. This should be enabled only during troubleshooting." /></td>
+                <td><input type="button" id="btnGenerateConfig" value="Generate Config" title="If XML Config is not already created, click this button to Generate Config"/></td>
+                <td>Refresh Config? <input id="chkRefreshConfigXml" type="checkbox" title="Click this checkbox, if any new Customization needs to be refreshed into Config Xml" /></td>
+                <td><input type="button" id="btnUpdateConfig" value="Update Config" title="Click this button to save any changes made to Config XML on this page." /></td>
+                
+            </tr>
+        </table>
+    </div>
+    <br /><br />
+    <div id="DIVConfig">
+       
+    </div>
+</body>
+</html>
